@@ -1,4 +1,10 @@
+__pycache__/
+
+
 src/
 include/
+
+
 CMakeLists.txt
 package.xml
+.env

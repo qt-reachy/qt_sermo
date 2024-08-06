@@ -8,7 +8,8 @@ import subprocess
 from qt_robot_interface.srv import *
 from qt_gesture_controller.srv import gesture_play
 from audio_common_msgs.msg import AudioData
-from src.libs.synchronizer import TaskSynchronizer
+from pkgs.synchronizer import TaskSynchronizer
+from pkgs.llm import LLM
 
 
 AUDIO_RATE = 16000
@@ -82,7 +83,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    speechSay('#MONKEY#')
+    speechSay('#CAT#')
 
     rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, channel_callback, wf)
     print("recording...")
@@ -103,6 +104,14 @@ if __name__ == '__main__':
     p = subprocess.run(command, shell=True, capture_output=True, text=True)
     
     print("I heard the following:")
-    print(p.stdout)
+    # print(p.stdout)
+    # print(p.stderr) # detailed report
+
+    eggs = str(p.stdout.strip()).split("]")[1]
+
+    print(eggs)
+
+    newChat = LLM("192.168.2.120:11434", "user", "llama3", "You are a robot called QT")
+    newChat.chat(eggs)
 
     print("Done")

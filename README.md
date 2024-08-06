@@ -14,9 +14,11 @@
 
 ## Nvidia Jetson Orin & LLM
 - Local Large Language Models is being run through Ollama Nvidia Container on a [Nvidia Jetson Orin Nano Developer Kit](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/), 8GB with 1tb SSD.
-- Local Large Language Models are being run through Ollama in jetson container/*Tailored Docker*
+- Local Large Language Models are being run through [Ollama](https://github.com/ollama/ollama) in [Jetson container](https://www.jetson-ai-lab.com/tutorial_ollama.html)/*Tailored Docker*
     - Currently using Llama 3 7B
 - Make sure IP to Jetson Nano Orin is correct and both the robot and the Jetson Orin Nano are on the same local network.
+
+1. 
 
 # WIP
 - Integrate *brain* using LLM and Jetson Orin Nano
@@ -25,6 +27,7 @@
 ## issues
 ### Major
 - Ollama is *slow*
+    - Explore Jetson containers [Small LLM](https://www.jetson-ai-lab.com/tutorial_slm.html) & [NanoLLM](https://www.jetson-ai-lab.com/tutorial_nano-llm.html)
 ### Minor
 - Using absolute paths on QT
 
