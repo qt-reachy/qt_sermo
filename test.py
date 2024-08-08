@@ -1,39 +1,35 @@
 #!/usr/bin/env python3
-import wave
 import rospy
-import datetime
 import time
-import os
 import subprocess
+import re
+
 from qt_robot_interface.srv import *
 from qt_gesture_controller.srv import gesture_play
-from audio_common_msgs.msg import AudioData
-from src.libs.synchronizer import TaskSynchronizer
 
+from pkgs.synchronizer import TaskSynchronizer
+from pkgs.record import Record
+from pkgs.llm import LLM
+from pkgs.filenames import TimestampFilename
 
-AUDIO_RATE = 16000
-AUDIO_CHANNELS = 1
-AUDIO_WIDTH = 2
+import env
 
-# Debugging parameters
-TALK = 0
-PRINT_COMMAND = 0
-
-
-def channel_callback(msg, wf):
-    wf.writeframes(msg.data)
-
-def datetime_to_integer(dt):
-    # 1970-01-01 01:30:45 -> 19700101013045
-    return int(dt.strftime("%Y%m%d%H%M%S"))
-
+# Variables
+START_KEY = 's'
+STOP_KEY = 'q'
+EXTENSION = ".wav"
+ROLE = "user"
+MODEL = "qt" # "llama3.1"
+WHISPERLOCATION = env.WhispercppLocation
+LOCATION = env.LocalConversationLocation
+HOST = env.LocalOllamaHost
 
 
 # main
 if __name__ == '__main__':
     
-    rospy.loginfo("Started Whispercpp")
-
+    rospy.loginfo("Started interaction")
+    start = time.time()
 
     # define ros services
     speechConfig = rospy.ServiceProxy('/qt_robot/speech/config', speech_config)
@@ -42,67 +38,43 @@ if __name__ == '__main__':
     emotionShow = rospy.ServiceProxy('/qt_robot/emotion/show', emotion_show)
 
     # ceate an instance of TaskSynchronizer
-    ts = TaskSynchronizer()
 
     # block/wait for ros service
-    rospy.wait_for_service('/qt_robot/speech/say')
     rospy.wait_for_service('/qt_robot/gesture/play')
     rospy.wait_for_service('/qt_robot/emotion/show')
-    
+    rospy.wait_for_service('/qt_robot/speech/say')
+
+    filename = TimestampFilename(location=LOCATION, extension=EXTENSION).set_filename()
+
+    recording = Record(filename=filename)
+    speechSay('#GOAT#')
+    recording.timed_record(5)
+
+    # recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {WHISPERLOCATION}samples/jfk.wav")
+    recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
+    # print("ASR: ", recording)
+    p = subprocess.run(recording, shell=True, capture_output=True, text=True)
+    print("I heard the following:")
+    # print(p.stdout)
+    # print(p.stderr) # detailed report
+    prompt = str(p.stdout.strip()).split("]")[1]
+    print(prompt)
+
+    # Make new chat and querry LLM
+    newChat = LLM(HOST, ROLE, MODEL)
+    reply = newChat.prompt(prompt)
+
+    # fix reply
+    reply = reply
 
 
     speechConfig("en-US", 0, 0)
 
-    if TALK == True:
-        results = ts.sync([
-            (0, lambda: speechSay('Hey! My name is QT, and I am a robot')),
-            (0, lambda: gesturePlay('QT/happy', 0))
+    ts = TaskSynchronizer()
+    results = ts.sync([
+            (0, lambda: speechSay(reply)),
+            (0, lambda: gesturePlay('QT/Dance/Dance-1-3', 0))
         ])
-        print('talkText and gesturePlay finished.')
-
-    print("Started whisper cpp test")
-
-    START_KEY = 's'
-    STOP_KEY = 'q'
-
-    timestamp = datetime_to_integer(datetime.datetime.now())
-    filename = os.path.expanduser(f"~/kristoffer/conversations/{timestamp}.wav")
-
-    whispercpp_path = os.path.expanduser("~/catkin_ws/src/whispercpp/src/whisper.cpp/")
 
 
-
-    # call the relevant service
-    rospy.init_node('audio_record')
-    
-    wf = wave.open(filename, 'wb')
-    wf.setnchannels(AUDIO_CHANNELS)
-    wf.setsampwidth(AUDIO_WIDTH)
-    wf.setframerate(AUDIO_RATE)
-
-    start = time.time()
-
-    speechSay('#MONKEY#')
-
-    rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, channel_callback, wf)
-    print("recording...")
-    while not rospy.is_shutdown():
-        rospy.sleep(1)
-        if time.time() > start + 5:
-            print("Stopped recording")
-            rospy.signal_shutdown("end")
-            wf.close()
-    
-
-    # command = str(f"{whispercpp_path}main -m {whispercpp_path}models/ggml-small.en.bin {whispercpp_path}samples/jfk.wav")
-    command = str(f"{whispercpp_path}main -m {whispercpp_path}models/ggml-small.en.bin {filename}")
-    
-    if PRINT_COMMAND == True:
-        print("Commanding whisper.cpp: ", command)
-
-    p = subprocess.run(command, shell=True, capture_output=True, text=True)
-    
-    print("I heard the following:")
-    print(p.stdout)
-
-    print("Done")
+    print("Finished interaction")
