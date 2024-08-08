@@ -12,7 +12,7 @@ class TaskSynchronizer():
     """
 
     def __init__(self, max_workers=5):
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
         self.executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers)
 

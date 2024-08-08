@@ -1,4 +1,4 @@
-# Q_Whispercpp
+# QT_Whispercpp
 
 [Whispercpp](https://github.com/ggerganov/whisper.cpp) for [QT robot](https://docs.luxai.com/docs/intro_code), integrated with ROS and external rPI 4 with [ReSpeaker](https://wiki.seeedstudio.com/ReSpeaker_4_Mic_Array_for_Raspberry_Pi/)
 
@@ -28,6 +28,8 @@
 ### Major
 - Ollama is *slow*
     - Explore Jetson containers [Small LLM](https://www.jetson-ai-lab.com/tutorial_slm.html) & [NanoLLM](https://www.jetson-ai-lab.com/tutorial_nano-llm.html)
+- Whispercpp is run through bash
+    - Is there a Python library that I am missing?
 ### Minor
 - Using absolute paths on QT
 
