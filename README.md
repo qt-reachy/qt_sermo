@@ -18,9 +18,7 @@
     - Currently using Llama 3 7B
 - Make sure IP to Jetson Nano Orin is correct and both the robot and the Jetson Orin Nano are on the same local network.
 
-1. Get your Nvidia Jetson Orin up and running, install Ollama from jetson-ai-lab.com
-    a. *Optional* Update Ollama container to autostart on boot
-2. Note host IP and add to main file.
+1. 
 
 # WIP
 - ~~Integrate *brain* using LLM and Jetson Orin Nano~~
@@ -32,6 +30,8 @@
 
 ## issues
 ### Major
+- Ollama is *slow*
+    - Explore Jetson containers [Small LLM](https://www.jetson-ai-lab.com/tutorial_slm.html) & [NanoLLM](https://www.jetson-ai-lab.com/tutorial_nano-llm.html)
 - Whispercpp is run through bash
     - Is there a Python library that I am missing?
 ### Minor
