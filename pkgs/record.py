@@ -12,8 +12,8 @@ class Record():
         self.wf.setframerate(16000)
         self.wf.setnchannels(1)
         self.wf.setsampwidth(2)
-        self.recording = 0
         self.timeout = 0
+        self.__recording = 0
 
     def channel_callback(self, msg, wf):
         wf.writeframes(msg.data)
@@ -24,17 +24,15 @@ class Record():
     async def stop_record(self):
         try:
             await asyncio.sleep(self.timeout)
-            self.recording = 0
+            self.__recording = 0
             self.wf.close()
         except Exception as e:
             print(e)
-        print("Stopped recording")
 
     async def start_record(self):
         try:
-            self.recording = 1
-            print("recording...")
-            while self.recording:
+            self.__recording = 1
+            while self.__recording:
                 rospy.sleep(0.1)
                 await self.stop_record()
         except Exception as e:
