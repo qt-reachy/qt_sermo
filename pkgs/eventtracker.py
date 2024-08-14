@@ -10,16 +10,31 @@ class EventTracker():
     def __init__(self, csvfile="eggs.csv") -> None:
         self.__events = []
         self.csvfile = csvfile
-        self.__id = self.__set_id()
+        self.__actions = {}
+        self.__user = self.__set_user()
     
-    def __set_id(self):
+    def __set_user(self):
         return uuid1()
 
     def addEvent(self, action, content):
-        self.__events.append(self.__newEvent(action, content))
-    
+        newEvent = self.__newEvent(action, content)
+        self.__events.append(newEvent)
+
+    def __set_action_counter(self, action):
+        # Using a dict to track, as application interaction are short
+        if action not in self.__actions:
+            self.__actions[action] = 1
+        else:
+            self.__actions[action] += 1
+        return self.__actions[action]
+
     def __newEvent(self, action, content):
-        event = [time.time(), action, content, self.__id]
+        __time = time.time()
+        __action = action
+        __action_counter = self.__set_action_counter()
+        __content = content
+        __user = self.__user
+        event = [__time, __action, __action_counter, __content, __user]
         return event
     
     def __write_to_csv(self):
