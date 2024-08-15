@@ -33,6 +33,7 @@
 ## issues
 ### Major
 - Whispercpp is run through bash
+- Currently only prompting first line of Whispercpp ASR response
     - Is there a Python library that I am missing?
 ### Minor
 - Using absolute paths on QT
