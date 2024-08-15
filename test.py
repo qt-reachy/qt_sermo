@@ -61,9 +61,9 @@ if __name__ == '__main__':
     try:
         tracker.start()
         speechSay('#GOAT#')
-        tracker.addEvent("recording_start")
+        tracker.addEvent("recording_start", filename)
         recording.timed_record(5)
-        tracker.addEvent("recording_done", filename)
+        tracker.addEvent("recording_done", recording)
 
         recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
         tracker.addEvent("Whisper_interferance_start", recording)

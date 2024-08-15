@@ -31,7 +31,7 @@ class EventTracker():
     def __newEvent(self, action, msg = None):
         __time = time.time()
         __action = action
-        __action_counter = self.__set_action_counter()
+        __action_counter = self.__set_action_counter(__action)
         __msg = msg
         __user = self.__user
         event = [__time, __action, __action_counter, __msg, __user]
@@ -43,8 +43,8 @@ class EventTracker():
             writer.writerows(self.__events)
 
     def start(self):
-        self.addEvent("interaction_start")
+        self.addEvent("interaction_start", self.__user)
 
     def stop(self):
-        self.addEvent("interaction_stop")        
+        self.addEvent("interaction_stop", self.__user)        
         self.__write_to_csv()
