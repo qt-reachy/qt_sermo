@@ -27,11 +27,11 @@
     - Await Jetson container update for Llama 3.1 and tools functionality
     - Compare with Vector creation and RAG
 - Use through tablets and LuxAI Studio
+- Analytics
+
 
 ## issues
 ### Major
-- Ollama is *slow*
-    - Explore Jetson containers [Small LLM](https://www.jetson-ai-lab.com/tutorial_slm.html) & [NanoLLM](https://www.jetson-ai-lab.com/tutorial_nano-llm.html)
 - Whispercpp is run through bash
     - Is there a Python library that I am missing?
 ### Minor
@@ -42,4 +42,4 @@
 - LLM reply is wrong format
     - Explored grammar, not available in Ollama...
     - Regex hacks?
-
+- Tracking could be better integrated

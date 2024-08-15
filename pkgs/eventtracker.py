@@ -16,8 +16,8 @@ class EventTracker():
     def __set_user(self):
         return uuid1()
 
-    def addEvent(self, action, content):
-        newEvent = self.__newEvent(action, content)
+    def addEvent(self, action, msg):
+        newEvent = self.__newEvent(action, msg)
         self.__events.append(newEvent)
 
     def __set_action_counter(self, action):
@@ -28,13 +28,13 @@ class EventTracker():
             self.__actions[action] += 1
         return self.__actions[action]
 
-    def __newEvent(self, action, content):
+    def __newEvent(self, action, msg = None):
         __time = time.time()
         __action = action
         __action_counter = self.__set_action_counter()
-        __content = content
+        __msg = msg
         __user = self.__user
-        event = [__time, __action, __action_counter, __content, __user]
+        event = [__time, __action, __action_counter, __msg, __user]
         return event
     
     def __write_to_csv(self):
@@ -42,6 +42,9 @@ class EventTracker():
             writer = csv.writer(csvfile)
             writer.writerows(self.__events)
 
-    def writeOut(self):
-        self.addEvent("End_Interaction", 1)
+    def start(self):
+        self.addEvent("interaction_start")
+
+    def stop(self):
+        self.addEvent("interaction_stop")        
         self.__write_to_csv()
