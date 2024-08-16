@@ -66,18 +66,18 @@ if __name__ == '__main__':
         tracker.addEvent("recording_done", filename)
 
         recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
-        tracker.addEvent("Whisper_interferance_start", recording)
+        tracker.addEvent("asr_inference_start", recording)
         p = subprocess.run(recording, shell=True, capture_output=True, text=True)
-        tracker.addEvent("Whisper_interferance_done", p.stdout)
+        tracker.addEvent("asr_inference_done", p.stdout)
 
         # Clean up Whisper output to a prompt
         prompt = str(p.stdout.strip()).split("]")[1]
         
         # Make new chat and querry LLM
         newChat = LLM(HOST, ROLE, MODEL)
-        tracker.addEvent("prompt_start", prompt)
+        tracker.addEvent("llm_prompt_start", prompt)
         response = newChat.prompt(prompt)
-        tracker.addEvent("prompt_done", response)
+        tracker.addEvent("llm_prompt_done", response)
 
 
         # Config speech to english
@@ -86,7 +86,8 @@ if __name__ == '__main__':
         # fix reply for SpeechSay
         say = clean_output(response)
         gesture = 'QT/Dance/Dance-1-3'
-        tracker.addEvent("robot_start", say + gesture)
+        tracker.addEvent("robot_gesture", gesture)
+        tracker.addEvent("robot_start", say)
         # Do some movement and say llm response
         ts = TaskSynchronizer()
         results = ts.sync([
