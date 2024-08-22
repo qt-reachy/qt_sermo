@@ -46,5 +46,5 @@ class EventTracker():
         self.addEvent("interaction_start", self.__user)
 
     def stop(self):
-        self.addEvent("interaction_done")        
+        self.addEvent("interaction_done", self.__user)        
         self.__write_to_csv()
