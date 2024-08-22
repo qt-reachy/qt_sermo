@@ -45,7 +45,7 @@ class Record():
             self.wf.setsampwidth(2)
             self.__service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, self.wf)
             while self.__recording:
-                rospy.spin()
+                rospy.sleep(0.5)
             self.wf.close()
             self.__service.unregister()
         except Exception as e:

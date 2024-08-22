@@ -68,9 +68,9 @@ if __name__ == '__main__':
         tracker.addEvent("asr_inference_start", recording)
         p = subprocess.run(recording, shell=True, capture_output=True, text=True)
         tracker.addEvent("asr_inference_done", p.stdout)
-
+        
         # Clean up Whisper output to a prompt
-        prompt = str(p.stdout.strip()).split("]")[1]
+        prompt = re.sub("[\(\[].*?[\)\]]", "", p.stdout)
         
         # Make new chat and querry LLM
         newChat = LLM(HOST, ROLE, MODEL)
