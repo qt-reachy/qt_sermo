@@ -2,54 +2,61 @@
 
 import wave
 import rospy
-import asyncio
+import threading
 from audio_common_msgs.msg import AudioData
 
 class Record():
     def __init__(self, filename) -> None:
-        self.wf = wave.open(filename, 'wb')
         # Required values for Respeaker and Whisper
-        self.wf.setframerate(16000)
-        self.wf.setnchannels(1)
-        self.wf.setsampwidth(2)
-        self.timeout = 0
-        self.__recording = 0
+        self.filename = filename
+        self._recording = True
 
     def channel_callback(self, msg, wf):
         wf.writeframes(msg.data)
-    
-    def set_timeout(self, t):
-        self.timeout = t
-
-    async def stop_record(self):
-        try:
-            await asyncio.sleep(self.timeout)
-            self.__recording = 0
-            self.wf.close()
-        except Exception as e:
-            print(e)
-
-    async def start_record(self):
-        try:
-            self.__recording = 1
-            while self.__recording:
-                rospy.sleep(0.1)
-                await self.stop_record()
-        except Exception as e:
-            print(e)
 
     def timed_record(self, t):
-        ''' Records using ROS Respeaker for t seconds '''
-        self.set_timeout(t=t)
+        ''' Simple record for t time '''
         try:
             rospy.init_node('audio_record')
-            service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, self.wf)
-            loop = asyncio.new_event_loop()
-            tasks = [
-                loop.create_task(self.start_record()),
-            ]
-            loop.run_until_complete(asyncio.wait(tasks))
-            loop.close()
+            wf = wave.open(self.filename, 'wb')
+            wf.setframerate(16000)
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, wf)
+            rospy.sleep(t)
+            wf.close()
             service.unregister()
         except Exception as e:
-            return e
+            print(e)
+
+    def break_record(self) -> None:
+        while True:
+            val = input('"q" and ENTER to stop')
+            if val == "q":
+                break
+        self.__recording = False
+
+
+    def __record(self):
+        try:
+            self.wf = wave.open(self.filename, 'wb')
+            self.wf.setframerate(16000)
+            self.wf.setnchannels(1)
+            self.wf.setsampwidth(2)
+            self.__service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, self.wf)
+            while self.__recording:
+                rospy.spin()
+            self.wf.close()
+            self.__service.unregister()
+        except Exception as e:
+            print(e)
+
+    def record(self):
+        rospy.init_node('audio_record')
+        start = threading.Thread(target=self.__record)
+        stop = threading.Thread(target=self.break_record)
+        self.__recording = True
+        start.start()
+        stop.start()
+        stop.join()
+

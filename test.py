@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import rospy
-import time
 import subprocess
 import re
 
@@ -62,7 +61,7 @@ if __name__ == '__main__':
         tracker.start()
         speechSay('#GOAT#')
         tracker.addEvent("recording_start", filename)
-        recording.timed_record(5)
+        recording.record()
         tracker.addEvent("recording_done", recording)
 
         recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
