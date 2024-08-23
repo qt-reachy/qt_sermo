@@ -9,15 +9,11 @@ from qt_gesture_controller.srv import gesture_play
 from pkgs.synchronizer import TaskSynchronizer
 from pkgs.record import Record
 from pkgs.llm import LLM
-from pkgs.filenames import TimestampFilename
 from pkgs.eventtracker import EventTracker
 
 import env
 
 # Variables
-START_KEY = 's'
-STOP_KEY = 'q'
-EXTENSION = ".wav"
 ROLE = "user"
 MODEL = "qt" # "llama3.1"
 WHISPERLOCATION = env.WhispercppLocation
@@ -51,48 +47,56 @@ if __name__ == '__main__':
     rospy.wait_for_service('/qt_robot/speech/say')
 
     # init classes
-    filename = TimestampFilename(location=LOCATION, extension=EXTENSION).set_filename()
+    
     tracker = EventTracker(csvfile=CSV)
-    recording = Record(filename=filename)
 
     rospy.loginfo("Started interaction")
 
     try:
         tracker.start()
-        speechSay('#GOAT#')
-        tracker.addEvent("recording_start", filename)
-        recording.record()
-        tracker.addEvent("recording_done", recording)
 
-        recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
-        tracker.addEvent("asr_inference_start", recording)
-        p = subprocess.run(recording, shell=True, capture_output=True, text=True)
-        tracker.addEvent("asr_inference_done", p.stdout)
-        
-        # Clean up Whisper output to a prompt
-        prompt = re.sub("[\(\[].*?[\)\]]", "", p.stdout)
-        
-        # Make new chat and querry LLM
-        newChat = LLM(HOST, ROLE, MODEL)
-        tracker.addEvent("llm_prompt_start", prompt)
-        response = newChat.prompt(prompt)
-        tracker.addEvent("llm_prompt_done", response)
+        while True:
+            recorder = Record()
+            speechSay('#GOAT#')
+            tracker.addEvent("recording_start", ROLE)
+            filename = recorder.record()
+            tracker.addEvent("recording_done", filename)
+            print("filename: ",filename)
+
+            recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
+            tracker.addEvent("asr_inference_start", recording)
+            p = subprocess.run(recording, shell=True, capture_output=True, text=True)
+            tracker.addEvent("asr_inference_done", p.stdout)
+            
+            # Clean up Whisper output to a prompt
+            prompt = re.sub("[\(\[].*?[\)\]]", "", p.stdout)
+
+            if any(ext in prompt for ext in ["bye", "goodbye", "see you"]):
+                speechSay("Nice talking to you, goodbye")
+                break
+            else:
+                # Make new chat and querry LLM
+                newChat = LLM(HOST, ROLE, MODEL)
+                tracker.addEvent("llm_prompt_start", prompt)
+                response = newChat.prompt(prompt)
+                tracker.addEvent("llm_prompt_done", response)
 
 
-        # Config speech to english
-        speechConfig("en-US", 0, 0)
+                # Config speech to english
+                speechConfig("en-US", 0, 0)
 
-        # fix reply for SpeechSay
-        say = clean_output(response)
-        gesture = 'QT/Dance/Dance-1-3'
-        tracker.addEvent("robot_gesture", gesture)
-        tracker.addEvent("robot_start", say)
-        # Do some movement and say llm response
-        ts = TaskSynchronizer()
-        results = ts.sync([
-                (0, lambda: speechSay(say)),
-                (0, lambda: gesturePlay(gesture, 0))
-            ])
+                # fix reply for SpeechSay
+                say = clean_output(response)
+                gesture = 'QT/Dance/Dance-1-3'
+                tracker.addEvent("robot_gesture", gesture)
+                tracker.addEvent("robot_start", say)
+                # Do some movement and say llm response
+                ts = TaskSynchronizer()
+                results = ts.sync([
+                        (0, lambda: speechSay(say)),
+                        (0, lambda: gesturePlay(gesture, 0))
+                    ])
+                
         tracker.addEvent("robot_done", results)
     except Exception as e:
         tracker.addEvent("error", e.args)
