@@ -61,7 +61,6 @@ if __name__ == '__main__':
             tracker.addEvent("recording_start", ROLE)
             filename = recorder.record()
             tracker.addEvent("recording_done", filename)
-            print("filename: ",filename)
 
             recording = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
             tracker.addEvent("asr_inference_start", recording)
@@ -71,8 +70,15 @@ if __name__ == '__main__':
             # Clean up Whisper output to a prompt
             prompt = re.sub("[\(\[].*?[\)\]]", "", p.stdout)
 
-            if any(ext in prompt for ext in ["bye", "goodbye", "see you"]):
-                speechSay("Nice talking to you, goodbye")
+            if any(ext in prompt for ext in ["bye", "goodbye"]):
+                tracker.addEvent("llm_prompt_start", prompt)
+                tracker.addEvent("llm_prompt_done", "Goodbye")
+
+                say = "Nice talking to you, goodbye"
+                tracker.addEvent("robot_gesture", "WAVE")
+                tracker.addEvent("robot_start", say)
+                speechSay(say)
+                tracker.addEvent("robot_done", True)
                 break
             else:
                 # Make new chat and querry LLM
@@ -97,7 +103,8 @@ if __name__ == '__main__':
                         (0, lambda: gesturePlay(gesture, 0))
                     ])
                 
-        tracker.addEvent("robot_done", results)
+            tracker.addEvent("robot_done", results)
+
     except Exception as e:
         tracker.addEvent("error", e.args)
         print(e)
