@@ -1,4 +1,4 @@
-# QTo
+# qt_sermo
 
 Is a full on Conversation simulation for the Arcada robot QT, *Sötis*. 
 
@@ -17,19 +17,21 @@ title: Pipeline(Wip)
 # Setup
 | Device | Instances                | CounterSpecs                                          |
 |--------|--------------------------|-------------------------------------------------------|
-| QTPC   | ROS, QTo, Whisper.cpp    | Intel® NUC  i7 4-core @ 4.4GHz, 32 GB RAM, 512 GB SSD |
+| QTPC   | ROS, qt_sermo, Whisper.cpp    | Intel® NUC  i7 4-core @ 4.4GHz, 32 GB RAM, 512 GB SSD |
 | QTRP   | ROS, Respeaker Mic Array | [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/), 4gb, 64gb eMMC                        |
 | Jetson | Ollama                   | [Nvidia Jetson Orin Nano Developer Kit](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/), 8gb, 1Tb PCIe 3.0     |
 
-## Installing Whispercpp *Wip*
+## Installing *Wip*
 
-1. Create ROS project [LuxAI Documentation](https://docs.luxai.com/docs/tutorials/python/python_ros_project)
-2. Clone Whispercpp into project
-3. Build (and test Whispercpp)
-4. Use files in this repo
-5. Create or ask for `env.py` for local variables
-    - Make sure IP to Jetson Nano Orin is correct and both the robot and the Jetson Orin Nano are on the same network.
-6. Run ~~`main`~~ `test.py` file 
+1. Clone, Build (and test) [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+    - Can be located anywhere on your system
+2. Create ROS project [LuxAI Documentation](https://docs.luxai.com/docs/tutorials/python/python_ros_project) - *Optional*
+3. Clone this repository *in the ROS project*
+4. Create or ask for `env.py` for local variables
+    - Make sure to link the location of you whisper.cpp instance correctly
+    - Make sure the IP to Jetson Nano Orin is correct and both the robot and the Jetson Orin Nano are on the same network.
+5. Build catkin spaces - *Optional*
+6. Run ~~`main`~~ `test.py` file or `rosrun qt_sermo test.py`
 
 # LLM
 - Local Large Language Models are being run through [Ollama](https://github.com/ollama/ollama) in [Jetson container](https://www.jetson-ai-lab.com/tutorial_ollama.html)/*Tailored Docker*
@@ -57,7 +59,7 @@ Logs are then saved in the following format:
 |------------|--------|---------|----------------|--------|
 | 1724321234 | Prompt | 1       | "Who are you?" | uuid_1 |
 
-Data log is aggregated in another github project [QTo_Analytics](https://github.com/qt-reachy/QTo_Analytics)
+Data log is aggregated in another github project [qt_sermo_analytics](https://github.com/qt-reachy/qt_sermo_analytics)
 
 ## Recordings
 
