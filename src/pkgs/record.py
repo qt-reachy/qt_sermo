@@ -20,7 +20,6 @@ class Record():
     def timed_record(self, t):
         ''' Simple record for t time '''
         try:
-            rospy.init_node('audio_record')
             wf = wave.open(self.filename, 'wb')
             wf.setframerate(16000)
             wf.setnchannels(1)
@@ -55,7 +54,6 @@ class Record():
             print(e)
 
     def record(self):
-        rospy.init_node('audio_record')
         start = threading.Thread(target=self.__record)
         stop = threading.Thread(target=self.break_record)
         self.__recording = True

@@ -32,6 +32,8 @@ def clean_output(text):
 
 # main
 if __name__ == '__main__':
+    rospy.init_node('qt_sermo')
+    rospy.loginfo("qt_sermo_node started!")
     
 
     # define ros services
@@ -50,7 +52,6 @@ if __name__ == '__main__':
     
     tracker = EventTracker(csvfile=CSV)
 
-    rospy.loginfo("Started interaction")
 
     try:
         tracker.start()
@@ -58,6 +59,7 @@ if __name__ == '__main__':
         while True:
             recorder = Record()
             speechSay('#GOAT#')
+            rospy.loginfo("recording...")
             tracker.addEvent("recording_start", ROLE)
             filename = recorder.record()
             tracker.addEvent("recording_done", filename)
