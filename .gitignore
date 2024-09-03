@@ -2,7 +2,4 @@ __pycache__/
 
 include/
 
-
-CMakeLists.txt
-package.xml
 env.py
