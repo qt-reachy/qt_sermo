@@ -13,7 +13,7 @@ from llm import LLM
 from eventtracker import EventTracker
 from filenames import TimestampFilename
 
-import env
+import env as env
 
 from qt_sermo.srv import *
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # init classes
 
     service = rospy.Service(
-        'qt_robot/sermo', sermo_chat, chat
+        'qt_robot/sermo_chat', sermo_chat, chat
     )
 
     rospy.spin()
