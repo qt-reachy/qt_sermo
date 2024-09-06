@@ -1,133 +1,43 @@
-#!/usr/bin/env python3
-
 import rospy
-import subprocess
-import re
+import threading
+from chat import Chat
 
-from qt_robot_interface.srv import *
-from qt_gesture_controller.srv import gesture_play
+def sermo_handler(msg):
+    """ QT runs Python 3.8, switches introduced 3.10 """
+    
+    rospy.loginfo(msg.service)
 
-from synchronizer import TaskSynchronizer
-from record import Record
-from llm import LLM
-from eventtracker import EventTracker
-from filenames import TimestampFilename
+    userChat = Chat()
 
-import env as env
-
-from qt_sermo.srv import *
-
-# Variables
-ROLE = "user"
-MODEL = "qt" # "llama3.1"
-WHISPERLOCATION = env.WhispercppLocation
-LOCATION = env.LocalConversationLocation
-HOST = env.LocalOllamaHost
-CSV = env.LogCsvFile
-EXTENSION = ".wav"
-
-
-def clean_output(text):
-    text = re.sub("[\(\[\*].*?[\)\]\*]", "", text)
-    text = text.replace(",", " ")
-    text = text.replace("'", " ")
-    final_text = re.sub(" +", " ", text)
-    return final_text
-
-def chat(msg):
-    # rospy.loginfo(msg.service == "start")
-    tracker = EventTracker(csvfile=CSV)
-    try:
-        tracker.start()
-
-        while True:
-            filename = TimestampFilename(location=LOCATION, extension=EXTENSION).set_filename()
-            recorder = Record(filename)
-            speechSay('#GOAT#')
-            tracker.addEvent("recording_start", ROLE)
-            recorder.ham_record()
-            tracker.addEvent("recording_done", filename)
-            inference_command = str(f"{WHISPERLOCATION}main -m {WHISPERLOCATION}models/ggml-small.en.bin {filename}")
-            tracker.addEvent("asr_inference_start", inference_command)
-            p = subprocess.run(inference_command, shell=True, capture_output=True, text=True)
-            tracker.addEvent("asr_inference_done", p.stdout)
-            # Clean up Whisper output to a prompt
-            prompt = re.sub("[\(\[].*?[\)\]]", "", p.stdout)
-            if any(ext in prompt for ext in ["bye", "goodbye"]):
-                tracker.addEvent("llm_prompt_start", prompt)
-                tracker.addEvent("llm_prompt_done", "Goodbye")
-                
-                gesture = 'QT/bye'
-                say = "Nice talking to you, goodbye"
-                tracker.addEvent("robot_gesture", gesture)
-                tracker.addEvent("robot_start", say)
-                ts = TaskSynchronizer()
-                results = ts.sync([
-                        (0, lambda: speechSay(say)),
-                        (0, lambda: gesturePlay(gesture, 0))
-                    ])
-                tracker.addEvent("robot_done", True)
-                break
-            else:
-                # Make new chat and querry LLM
-                newChat = LLM(HOST, ROLE, MODEL)
-                tracker.addEvent("llm_prompt_start", prompt)
-                response = newChat.prompt(prompt)
-                tracker.addEvent("llm_prompt_done", response)
-
-
-                # Config speech to english
-                speechConfig("en-US", 0, 0)
-
-                # fix reply for SpeechSay
-                say = clean_output(response)
-                gesture = 'QT/Dance/Dance-1-3'
-                tracker.addEvent("robot_gesture", gesture)
-                tracker.addEvent("robot_start", say)
-                # Do some movement and say llm response
-                ts = TaskSynchronizer()
-                results = ts.sync([
-                        (0, lambda: speechSay(say)),
-                        (0, lambda: gesturePlay(gesture, 0))
-                    ])
-                
-            tracker.addEvent("robot_done", results)
-
-    except Exception as e:
-        tracker.addEvent("error", e.args)
-        print(e)
-
-
-    tracker.stop()
+    if msg.service == "intro":
+        intro(userChat)
+    elif msg.service == "chat":
+        run = run = threading.Thread(target=userChat.chat)
+        run.start()
+        return False
+    elif msg.service == "image_gen":
+        apologise(userChat)
+    elif msg.service == "exposition":
+        apologise(userChat)
+    elif msg.service == "exit":
+        pass
+    else:
+        apologise(userChat)
 
     return True
 
+def intro(userChat) -> None:
+    say = "I am QT the robot. You can talk to me by prompting my LLM system if you pick the chat program. Use the buttons to to start and stop prompting and when you want to stop chatting simply prompt goodbye."
+    gesture = 'QT/show_QT'
+    userChat.animate(say=say, gesture=gesture)
 
-# main
-if __name__ == '__main__':
-    rospy.init_node('qt_sermo')
-    rospy.loginfo("qt_sermo_node started!")
-    
 
-    # define ros services
-    speechConfig = rospy.ServiceProxy('/qt_robot/speech/config', speech_config)
-    speechSay = rospy.ServiceProxy('/qt_robot/speech/say', speech_say)
-    gesturePlay = rospy.ServiceProxy('/qt_robot/gesture/play', gesture_play)
-    emotionShow = rospy.ServiceProxy('/qt_robot/emotion/show', emotion_show)
+def apologise(userChat) -> None:
+    say = "I am sorry, that function is not available yet"
+    gesture = 'QT/peekaboo'
+    userChat.animate(say, gesture)
 
-    
-    # block/wait for ros service
-    rospy.wait_for_service('/qt_robot/gesture/play')
-    rospy.wait_for_service('/qt_robot/emotion/show')
-    rospy.wait_for_service('/qt_robot/speech/say')
 
-    # init classes
 
-    service = rospy.Service(
-        'qt_robot/sermo_chat', sermo_chat, chat
-    )
 
-    rospy.spin()
-    
 
-    rospy.loginfo("Finished interaction")

@@ -3,68 +3,80 @@ import rospy
 import threading
 from audio_common_msgs.msg import AudioData
 
+# Service message import
 from qt_sermo.srv import *
 
-class Record():
+class Recorder():
     def __init__(self, filename) -> None:
         self.filename = filename
-        self._recording = True
+        self.__recording = False
+        self.__await = True
+        self.__running = True
+
+    def handle_record(self, data):
+        """ Handles sermo_record.srv
+            No bool handling in terminal, so we send int64
+                (int64) 1 = Start : 0 = Stop / Exit
+        """
+        if data.action == 1:
+            self.__await = False
+            self.__recording = True
+        elif data.action == 0 and self.__await == False:
+            self.__recording = False
+        elif data.action == 0 and self.__await == True:
+            self.__recording == False
+            self.__await == False
+            self.__running = False
+        else:
+            pass
+        
+        return True
+
 
     def channel_callback(self, msg, wf):
+        """ Respeaker writeframes callback function """
         wf.writeframes(msg.data)
 
-    def timed_record(self, t):
-        ''' Simple record for t time '''
-        try:
-            wf = wave.open(self.filename, 'wb')
-            wf.setframerate(16000)
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, wf)
-            rospy.sleep(t)
-            wf.close()
-            service.unregister()
-        except Exception as e:
-            print(e)
-
-    def break_record(self, data):
-        if data.action == 0:
-            self.__recording = data.action
-            rospy.loginfo("stopped recording")
-            return True
-        else:
-            return False
-
-    def ham_record(self) -> None:
-        self.__recording = True
-        try:
-            self.wf = wave.open(self.filename, 'wb')
-            self.wf.setframerate(16000)
-            self.wf.setnchannels(1)
-            self.wf.setsampwidth(2)
-            self.__service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, self.wf)
-            service = rospy.Service(
-                'qt_robot/sermo_recorder', sermo_record, self.break_record
-                )
-            while self.__recording:
-                rospy.loginfo('recording...')
-                rospy.sleep(0.5)
-            self.wf.close()
-            self.__service.unregister()
-            service.shutdown("Done")
-        
-        except Exception as e:
-            print(e)
+    def __recorder(self) -> None:
+        while self.__await:
+            rospy.sleep(0.5)
+        if self.__running == True:
+            try:
+                self.wf = wave.open(self.filename, 'wb')
+                self.wf.setframerate(16000)
+                self.wf.setnchannels(1)
+                self.wf.setsampwidth(2)
+                self.__service = rospy.Subscriber('/qt_respeaker_app/channel0', AudioData, self.channel_callback, self.wf)
+                while self.__recording:
+                    rospy.loginfo('recording...')
+                    rospy.sleep(0.5)
+                self.wf.close()
+                self.__service.unregister()
+                self.__running = False
+            
+            except Exception as e:
+                print(e)
 
     def record(self):
-        start = threading.Thread(target=self.__record)
-        stop = threading.Thread(target=self.break_record)
-        
-        start.start()
-        stop.start()
-        
-        start.join()
-        stop.join()
+        """ Fires of a new thread with a recorder 
+            Opens a sermo_record service that handles recorder
+        """
+        start = threading.Thread(target=self.__recorder)
 
-        return self.filename
+        start.start()
+
+        # Start sermo_record service
+        service = rospy.Service(
+        'qt_robot/sermo_recorder', sermo_record, self.handle_record
+            )
+        rospy.loginfo('Service sermo recorder open')
+        
+        # Wait until the recorder is done then remove service
+        while self.__running:
+            rospy.sleep(0.5)
+
+        service.shutdown("Done")
+        rospy.loginfo('Service sermo recorder closed')
+
+        return True
 
