@@ -23,10 +23,12 @@ class Recorder():
             self.__recording = True
         elif data.action == 0 and self.__await == False:
             self.__recording = False
+        # Exit before recording
         elif data.action == 0 and self.__await == True:
             self.__recording == False
             self.__await == False
             self.__running = False
+            self.filename = False
         else:
             pass
         
@@ -78,5 +80,4 @@ class Recorder():
         service.shutdown("Done")
         rospy.loginfo('Service sermo recorder closed')
 
-        return True
-
+        return self.filename

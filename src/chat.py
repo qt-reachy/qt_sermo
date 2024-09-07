@@ -1,23 +1,25 @@
 import random
 import subprocess
-import re
+import threading
 import rospy
+import re
 
 # Luxai
 from qt_robot_interface.srv import *
 from qt_gesture_controller.srv import gesture_play
 
 # Custom
-from synchronizer import TaskSynchronizer
-from record import Recorder
+from qt_sermo.srv import *
 from llm import LLM
+from record import Recorder
+from std_msgs.msg import Int64
 from eventtracker import EventTracker
 from filenames import TimestampFilename
+from synchronizer import TaskSynchronizer
 import env as env
 
 class Chat():
     def __init__(self) -> None:
-        self.__chat = True # Continuous
         self.__role = "user"
         self.__model = "qt" # "llama3.1"
         self.__whisperLocation = env.WhispercppLocation
@@ -26,6 +28,7 @@ class Chat():
         self.__logLocation = env.LogCsvFile
         self.__recordExtension = ".wav"
         self.__language = "en-US"
+        self.status = True
 
         # define ros services
         self.speechConfig = rospy.ServiceProxy('/qt_robot/speech/config', speech_config)
@@ -40,7 +43,26 @@ class Chat():
         
         # Set language, this is just for consistency
         self.set_speech()
+
+    
+    def get_status(self):
+        return self.status
         
+    def status_publisher(self):
+        # Start sermo_record service
+        publisher = rospy.Publisher("sermo_info", Int64, queue_size=10)
+        rospy.loginfo('Sermo info active')
+        while self.status:
+            status = self.get_status()
+            publisher.publish(status)
+            rospy.sleep(2)
+
+        # Arbitary publish an extra 10 times
+        status = self.get_status()
+        for iter in range(10):
+            publisher.publish(status)
+            rospy.sleep(2)
+
 
     def set_speech(self):
         self.speechConfig(self.__language, 0, 0)
@@ -88,11 +110,12 @@ class Chat():
         if any(ext in prompt for ext in ["bye", "goodbye"]):
             say = "Okey goodbye. It was very nice talking to you. Hope to see you again."
             gesture = self.get_random_gesture("bye")
-            self.__chat = False
+            self.status = False
         else:
             response = self.llm_inference(prompt)
             say = self.clean_output(response)
             gesture = self.get_random_gesture()
+            self.status = True
         return say, gesture
 
     def animate(self, say, gesture, neutral = True):
@@ -109,11 +132,13 @@ class Chat():
         return results
 
     def chat(self):
+        publisher = threading.Thread(target=self.status_publisher)
+        publisher.start()
+
         tracker = EventTracker(csvfile=self.__logLocation)
         tracker.start()
-        rospy.loginfo("Started a new chat")
         try:
-            while self.__chat:
+            while self.status:
                 # Make a recorder
                 ## Get a file name for recording
                 filename = TimestampFilename(location=self.__recordLocation, extension=self.__recordExtension).set_filename()
@@ -129,7 +154,10 @@ class Chat():
                 # asr inference
                 rospy.loginfo("Starting asr inference")
                 tracker.addEvent("asr_inference_start", filename)
-                asr_result = self.asr_inference(filename)
+                if recording:
+                    asr_result = self.asr_inference(recording)
+                else:
+                    asr_result = "goodbye"
                 tracker.addEvent("asr_inference_done", asr_result)
                 ## Clean response
                 prompt = re.sub("[\(\[].*?[\)\]]", "", asr_result)
